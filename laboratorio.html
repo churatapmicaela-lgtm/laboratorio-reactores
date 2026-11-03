@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorio Virtual - Reactores Ideales</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary-color: #1b365d;
+      --secondary-color: #4b6b94;
+      --accent-color: #d97706;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-light); color: var(--text-main); line-height: 1.5; padding: 20px; }
+    header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    header h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    header p { font-size: 0.95rem; opacity: 0.9; }
+    .author-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; margin-top: 10px; }
+    .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); }
+    .tab-btn { background-color: white; border: 1px solid var(--border-color); border-bottom: none; border-radius: 8px 8px 0 0; padding: 12px 20px; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn:hover { color: var(--primary-color); background-color: #f1f5f9; }
+    .tab-btn.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card h2 { font-size: 1.2rem; color: var(--primary-color); margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; outline: none; }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
+    .metric-card { background-color: #f8fafc; border-left: 4px solid var(--primary-color); padding: 12px; border-radius: 6px; }
+    .metric-card .val { font-size: 1.3rem; font-weight: 700; color: var(--primary-color); margin-top: 4px; }
+    .metric-card .lbl { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+    th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--border-color); }
+    th { background-color: #f1f5f9; color: var(--primary-color); font-weight: 600; }
+    .chart-container { position: relative; height: 320px; width: 100%; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Laboratorio Virtual: Simulación de Reactores Ideales</h1>
+    <p>Hidrogenación del 2,4-Dinitrotolueno — Análisis Cinético y Diseño de Reactores</p>
+    <div class="author-badge">Estudiante: Paola Micaela Mamani Churata | Ingeniería Química</div>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab1', event)">a) Método Integral / Diferencial</button>
+    <button class="tab-btn" onclick="switchTab('tab2', event)">b) Constante vs Temperatura</button>
+    <button class="tab-btn" onclick="switchTab('tab3', event)">c,d,e) Reactores Individuales</button>
+    <button class="tab-btn" onclick="switchTab('tab4', event)">f,g) Reactores en Serie</button>
+  </div>
+
+  <div id="tab1" class="tab-content active">
+    <div class="grid">
+      <div class="card">
+        <h2>Selección de Experimento</h2>
+        <div class="form-group">
+          <label>Temperatura de Experimento:</label>
+          <select id="expSelect" onchange="updateTab1()">
+            <option value="19">Experimento 1 (19 °C)</option>
+            <option value="33">Experimento 2 (33 °C)</option>
+            <option value="47">Experimento 3 (47 °C)</option>
+            <option value="59">Experimento 4 (59 °C)</option>
+          </select>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="lbl">Orden (n)</div><div class="val">3</div></div>
+          <div class="metric-card"><div class="lbl">k (L²/mol²·min)</div><div class="val" id="resK">0.92</div></div>
+        </div>
+        <table id="kineticsTable">
+          <thead><tr><th>t [min]</th><th>CA [M]</th><th>ln(CA)</th><th>1/CA</th><th>1/CA²</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Ajuste Cinético</h2>
+        <div class="chart-container"><canvas id="integralChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab2" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <h2>Ecuación de Arrhenius</h2>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="lbl">Ea (J/mol)</div><div class="val">52,828</div></div>
+          <div class="metric-card"><div class="lbl">k₀</div><div class="val">2.46 × 10⁹</div></div>
+        </div>
+        <div class="form-group" style="margin-top:15px;">
+          <label>Temperatura deseada (°C):</label>
+          <input type="number" id="inputTemp" value="100" oninput="calcKTemp()">
+        </div>
+        <div class="metric-card" style="border-left-color: var(--accent-color); margin-top:10px;">
+          <div class="lbl">k Calculada</div>
+          <div class="val" id="calcKVal">98.19 L²/mol²·s</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Gráfico Arrhenius</h2>
+        <div class="chart-container"><canvas id="arrheniusChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab3" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <h2>Reactor Individual</h2>
+        <div class="form-group">
+          <label>Tipo:</label>
+          <select id="reactType" onchange="calcReactorInd()">
+            <option value="BATCH">Batch</option>
+            <option value="CSTR">CSTR</option>
+            <option value="PFR">PFR</option>
+          </select>
+        </div>
+        <div class="form-group"><label>CA0 [mol/L]:</label><input type="number" id="inputC0" value="3.0" oninput="calcReactorInd()"></div>
+        <div class="form-group"><label>v0 [L/s]:</label><input type="number" id="inputV0" value="0.5" oninput="calcReactorInd()"></div>
+        <div class="form-group"><label>k:</label><input type="number" id="inputK" value="98.19" oninput="calcReactorInd()"></div>
+        <div class="form-group"><label>Volumen V [L]:</label><input type="number" id="inputVol" value="200" oninput="calcReactorInd()"></div>
+      </div>
+      <div class="card">
+        <h2>Resultado</h2>
+        <div class="metric-card">
+          <div class="lbl">Conversión Final (XA)</div>
+          <div class="val" id="valResult" style="font-size:1.8rem; color:var(--accent-color);">98.59 %</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab4" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <h2>Reactores en Serie (CSTR - PFR)</h2>
+        <div class="form-group"><label>CA0:</label><input type="number" id="sCA0" value="8" oninput="calcSerie()"></div>
+        <div class="form-group"><label>FA0:</label><input type="number" id="sFA0" value="1" oninput="calcSerie()"></div>
+        <div class="form-group"><label>V CSTR:</label><input type="number" id="sVCSTR" value="0.3" oninput="calcSerie()"></div>
+        <div class="form-group"><label>V PFR:</label><input type="number" id="sVPFR" value="0.2" oninput="calcSerie()"></div>
+        <div class="form-group"><label>k:</label><input type="number" id="sK" value="1" oninput="calcSerie()"></div>
+      </div>
+      <div class="card">
+        <h2>Conversiones en Serie</h2>
+        <div class="metric-grid">
+          <div class="metric-card"><div class="lbl">XA1 (1er Reactor)</div><div class="val" id="valXA1">70.59 %</div></div>
+          <div class="metric-card"><div class="lbl">XA2 (Final)</div><div class="val" id="valXA2">94.06 %</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const rawData = {
+      19: { t: [0,6,12,18,24,30,36,42,48,54,60], ca: [1, 0.343, 0.237, 0.191, 0.163, 0.144, 0.129, 0.118, 0.109, 0.101, 0.095] },
+      33: { t: [0,6,12,18,24,30,36,42,48,54,60], ca: [1, 0.216, 0.152, 0.123, 0.105, 0.093, 0.083, 0.076, 0.070, 0.066, 0.062] },
+      47: { t: [0,6,12,18,24,30,36,42,48,54,60], ca: [1, 0.132, 0.094, 0.077, 0.066, 0.058, 0.052, 0.048, 0.044, 0.041, 0.039] },
+      59: { t: [0,6,12,18,24,30,36,42,48,54,60], ca: [1, 0.086, 0.062, 0.050, 0.043, 0.038, 0.034, 0.031, 0.029, 0.027, 0.026] }
+    };
+    let intChart, arrChart;
+
+    function switchTab(tabId, evt) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      evt.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function updateTab1() {
+      const temp = document.getElementById('expSelect').value;
+      const data = rawData[temp];
+      const tbody = document.querySelector('#kineticsTable tbody');
+      tbody.innerHTML = '';
+      data.t.forEach((t, i) => {
+        const ca = data.ca[i];
+        tbody.innerHTML += `<tr><td>${t}</td><td>${ca}</td><td>${Math.log(ca).toFixed(2)}</td><td>${(1/ca).toFixed(2)}</td><td>${(1/(ca*ca)).toFixed(2)}</td></tr>`;
+      });
+      if(intChart) intChart.destroy();
+      intChart = new Chart(document.getElementById('integralChart').getContext('2d'), {
+        type: 'line',
+        data: { labels: data.t, datasets: [{ label: '1/CA²', data: data.ca.map(c => 1/(c*c)), borderColor: '#1b365d', fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function initArrhenius() {
+      arrChart = new Chart(document.getElementById('arrheniusChart').getContext('2d'), {
+        type: 'scatter',
+        data: { datasets: [{ label: 'ln(k) vs 1/T', data: [{x:0.003425, y:-0.08}, {x:0.003268, y:0.79}, {x:0.003125, y:1.71}, {x:0.003012, y:2.55}], backgroundColor: '#d97706', pointRadius:6 }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function calcKTemp() {
+      const Tkelvin = parseFloat(document.getElementById('inputTemp').value) + 273.15;
+      const k = 2456575815.14 * Math.exp(-52827.99 / (8.314 * Tkelvin));
+      document.getElementById('calcKVal').innerText = k.toFixed(2) + " L²/mol²·s";
+    }
+
+    function calcReactorInd() {
+      const type = document.getElementById('reactType').value;
+      const C0 = parseFloat(document.getElementById('inputC0').value);
+      const v0 = parseFloat(document.getElementById('inputV0').value);
+      const k = parseFloat(document.getElementById('inputK').value);
+      const V = parseFloat(document.getElementById('inputVol').value);
+      let XA = 0;
+      if(type === 'CSTR') {
+        const tau = V / v0;
+        for(let x = 0; x < 0.999; x += 0.001) {
+          if(k * tau * Math.pow(C0, 2) * Math.pow(1 - x, 3) - x <= 0) { XA = x; break; }
+        }
+      } else {
+        const term = 2 * k * (V / v0) * Math.pow(C0, 2);
+        XA = 1 - 1 / Math.sqrt(1 + term);
+      }
+      document.getElementById('valResult').innerText = (XA * 100).toFixed(2) + " %";
+    }
+
+    function calcSerie() {
+      const CA0 = parseFloat(document.getElementById('sCA0').value);
+      const FA0 = parseFloat(document.getElementById('sFA0').value);
+      const VCSTR = parseFloat(document.getElementById('sVCSTR').value);
+      const VPFR = parseFloat(document.getElementById('sVPFR').value);
+      const k = parseFloat(document.getElementById('sK').value);
+      let XA1 = 0;
+      const alpha1 = k * (Math.pow(CA0, 3) / FA0) * VCSTR;
+      for(let x = 0; x < 0.999; x += 0.001) {
+        if((x / Math.pow(1 - x, 3)) >= alpha1) { XA1 = x; break; }
+      }
+      const alpha2 = 2 * k * (Math.pow(CA0, 3) / FA0) * VPFR;
+      const XA2 = 1 - 1 / Math.sqrt((1 / Math.pow(1 - XA1, 2)) + alpha2);
+      document.getElementById('valXA1').innerText = (XA1 * 100).toFixed(2) + " %";
+      document.getElementById('valXA2').innerText = (XA2 * 100).toFixed(2) + " %";
+    }
+
+    window.onload = function() { updateTab1(); initArrhenius(); };
+  </script>
+</body>
+</html>
